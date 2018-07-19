@@ -12,8 +12,8 @@ package executor
 
 import (
     "time"
-    "github.com/damao/timewheel"
-    "github.com/damao/timewheel/async"
+    "github.com/xfali/timewheel"
+    "github.com/xfali/timewheel/async"
     "errors"
 )
 
