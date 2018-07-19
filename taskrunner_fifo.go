@@ -10,17 +10,13 @@
 
 package executor
 
-import (
-    "github.com/damao/timewheel/utils"
-)
-
 type TaskRunnerFIFO struct {
     task chan Task
-    stop utils.AtomicBool
+    stop chan bool
 }
 
 func NewFIFO(taskSize int) *TaskRunnerFIFO {
-    return &TaskRunnerFIFO{ make(chan Task, taskSize), 0}
+    return &TaskRunnerFIFO{make(chan Task, taskSize), make(chan bool)}
 }
 
 func (tr *TaskRunnerFIFO) SetTask(task Task) bool {
@@ -33,27 +29,25 @@ func (tr *TaskRunnerFIFO) SetTask(task Task) bool {
 }
 
 func (tr *TaskRunnerFIFO) Stop() {
-    tr.stop.Set()
+    close(tr.stop)
 }
 
 func (tr *TaskRunnerFIFO) Next() {
-    
+
 }
 
 func (tr *TaskRunnerFIFO) OnExpired(task Task) {
 }
 
-func (tr *TaskRunnerFIFO)Loop() {
+func (tr *TaskRunnerFIFO) Loop() {
     for {
-        if tr.stop.IsSet() {
-            break
-        }
-
         select {
-        case task, ok := <- tr.task:
-            if ok && !tr.stop.IsSet() {
+        case task, ok := <-tr.task:
+            if ok {
                 task()
             }
+        case <-tr.stop:
+            return
         }
     }
 }

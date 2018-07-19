@@ -10,18 +10,13 @@
 
 package executor
 
-import (
-    "github.com/damao/timewheel/utils"
-)
-
 type TaskRunnerOnce struct {
     task chan Task
-    stop utils.AtomicBool
-
+    stop chan bool
 }
 
 func NewOnce() *TaskRunnerOnce {
-    return &TaskRunnerOnce{ make(chan Task), 0 }
+    return &TaskRunnerOnce{ make(chan Task), make(chan bool) }
 }
 
 //NOTICE:当Loop协程没有就绪，则会一直返回false
@@ -35,7 +30,7 @@ func (tr *TaskRunnerOnce) SetTask(task Task) bool {
 }
 
 func (tr *TaskRunnerOnce) Stop() {
-    tr.stop.Set()
+    close(tr.stop)
 }
 
 func (tr *TaskRunnerOnce) Next() {
@@ -48,15 +43,13 @@ func (tr *TaskRunnerOnce) OnExpired(Task) {
 
 func (tr *TaskRunnerOnce)Loop() {
     for {
-        if tr.stop.IsSet() {
-            break
-        }
-
         select {
         case task, ok := <- tr.task:
-            if ok && !tr.stop.IsSet() {
+            if ok {
                 task()
             }
+        case <-tr.stop:
+            return
         }
     }
 }
