@@ -10,7 +10,9 @@
 
 package executor
 
-import "github.com/damao/timewheel/utils"
+import (
+    "github.com/damao/timewheel/utils"
+)
 
 type TaskRunnerFIFO struct {
     task chan Task
@@ -38,8 +40,7 @@ func (tr *TaskRunnerFIFO) Next() {
     
 }
 
-func (tr *TaskRunnerFIFO) OnExpired(Task) {
-
+func (tr *TaskRunnerFIFO) OnExpired(task Task) {
 }
 
 func (tr *TaskRunnerFIFO)Loop() {

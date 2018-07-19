@@ -13,8 +13,6 @@ package executor
 type TaskRunner interface {
     SetTask(Task) (bool)
     Stop()
-    Next()
     Loop()
-    OnExpired(Task)
 }
 

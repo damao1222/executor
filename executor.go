@@ -15,10 +15,10 @@ import (
 )
 
 type Task func()
-
+type TaskTimeout func()
 
 type Executor interface {
-    Run(Task, time.Duration) error
+    Run(Task, time.Duration, TaskTimeout) error
     Stop()
 }
 

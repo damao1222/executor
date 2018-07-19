@@ -23,7 +23,7 @@ type FixedExecutor struct {
     runners []TaskRunner
 }
 
-func NewFixedExecutor(size int) Executor {
+func NewFixedExecutor(size int, taskBufSize int) Executor {
     ex := &FixedExecutor{
         timewheel : async.New(20*time.Millisecond, time.Minute),
         runners : make([]TaskRunner, size),
@@ -31,20 +31,22 @@ func NewFixedExecutor(size int) Executor {
     //start timer
     ex.timewheel.Start()
     for i:=0; i<size; i++ {
-        ex.runners[i] = NewOnce()
+        ex.runners[i] = NewFIFO(taskBufSize)
         //start runner loop
         go ex.runners[i].Loop()
     }
     return ex
 }
 
-func (ex *FixedExecutor)Run(task Task, expire time.Duration) error {
+func (ex *FixedExecutor)Run(task Task, expire time.Duration, timeout TaskTimeout) error {
     for i:=0; i<len(ex.runners); i++ {
         runner := ex.runners[i]
         if runner.SetTask(task) {
-            ex.timewheel.Add(timewheel.NewTimer(func(data interface{}) {
-                runner.OnExpired(task)
-            }, expire, task))
+            if timeout != nil {
+                ex.timewheel.Add(timewheel.NewTimer(func(data interface{}) {
+                    timeout()
+                }, expire, nil))
+            }
             return nil
         }
     }
