@@ -11,8 +11,15 @@
 package executor
 
 type TaskRunner interface {
+    //尝试添加一个任务
+    //Task：任务
+    //成功返回true，失败返回false
     SetTask(Task) (bool)
+
+    //停止任务执行器
     Stop()
+
+    //执行器循环
     Loop()
 }
 

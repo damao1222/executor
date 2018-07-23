@@ -18,13 +18,18 @@ import (
 )
 
 
-type FixedExecutor struct {
+type FixedBufExecutor struct {
     timewheel timewheel.TimeWheel
     runners []TaskRunner
 }
 
-func NewFixedExecutor(size int, taskBufSize int) Executor {
-    ex := &FixedExecutor{
+//创建一个固定大小的协程池
+//size： 协程池大小
+//taskBufSize： 任务缓冲大小
+//需要注意的是，可以成功加入协程池的任务数量为 size * taskBufSize
+//并且当第一个协程池中的协程taskBufSize被填满之前，不会尝试使用协程池中的其他协程
+func NewFixedBufExecutor(size int, taskBufSize int) Executor {
+    ex := &FixedBufExecutor{
         timewheel : async.New(20*time.Millisecond, time.Minute),
         runners : make([]TaskRunner, size),
     }
@@ -38,7 +43,7 @@ func NewFixedExecutor(size int, taskBufSize int) Executor {
     return ex
 }
 
-func (ex *FixedExecutor)Run(task Task, expire time.Duration, timeout TaskTimeout) error {
+func (ex *FixedBufExecutor)Run(task Task, expire time.Duration, timeout TaskTimeout) error {
     for i:=0; i<len(ex.runners); i++ {
         runner := ex.runners[i]
         if runner.SetTask(task) {
@@ -53,7 +58,7 @@ func (ex *FixedExecutor)Run(task Task, expire time.Duration, timeout TaskTimeout
     return errors.New("All Runners are busy")
 }
 
-func (ex *FixedExecutor)Stop() {
+func (ex *FixedBufExecutor)Stop() {
     for _, runner := range ex.runners {
         runner.Stop()
     }
