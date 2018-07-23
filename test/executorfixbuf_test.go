@@ -15,7 +15,7 @@ import (
     "github.com/xfali/executor"
     "time"
     "fmt"
-    "github.com/xfali/timewheel/utils"
+    "github.com/xfali/goutils/atomic"
 )
 
 func TestFixedBufExecutor(t *testing.T) {
@@ -98,7 +98,7 @@ func TestFixedBufExecutor4(t *testing.T) {
     count := 0
     for i:=1; i<100; i++ {
         b := i
-        e := utils.AtomicBool(0)
+        e := atomic.AtomicBool(0)
         now := time.Now()
         if executor.Run(func() {
             fmt.Printf("%d set %t\n", b, e.IsSet())
@@ -131,7 +131,7 @@ func TestFixedBufExecutor5(t *testing.T) {
     count := 0
     for i:=1; i<100; i++ {
         b := i
-        e := utils.AtomicBool(0)
+        e := atomic.AtomicBool(0)
         now := time.Now()
         if executor.Run(func() {
             fmt.Printf("%d set %t\n", b, e.IsSet())

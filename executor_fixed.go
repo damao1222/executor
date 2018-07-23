@@ -16,13 +16,14 @@ import (
     "github.com/xfali/timewheel/async"
     "errors"
     "runtime"
+    "github.com/xfali/goutils/container"
 )
 
 
 type FixedExecutor struct {
     timewheel timewheel.TimeWheel
     runners []TaskRunner
-    taskBuf *BlockQueue
+    taskBuf *container.BlockQueue
     stop chan bool
 }
 
@@ -35,7 +36,7 @@ func NewFixedExecutor(size int, taskBufSize int) Executor {
     ex := &FixedExecutor{
         timewheel : async.New(20*time.Millisecond, time.Minute),
         runners : make([]TaskRunner, size),
-        taskBuf: NewBlockQueue(size + taskBufSize),
+        taskBuf: container.NewBlockQueue(size + taskBufSize),
         stop: make(chan bool),
     }
     //start timer
