@@ -64,7 +64,7 @@ func (ex *FixedBufExecutor)Run(task Task, expire time.Duration, timeout TaskTime
 
 //Not thread-safe but that's OK
 func (ex *FixedBufExecutor)selectRunner() TaskRunner {
-    index := int(atomic.AddUint32(&ex.curIndex, 1)) % len(ex.runners)
+    index := atomic.AddUint32(&ex.curIndex, 1) % uint32(len(ex.runners))
     //由于在多协程环境，某一个task runner是否idle是动态变化的，所以没必要保证此处的线程安全
     //ex.curIndex++
     //index := int(ex.curIndex) % len(ex.runners)
