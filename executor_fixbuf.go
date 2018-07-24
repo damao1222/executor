@@ -52,9 +52,9 @@ func (ex *FixedBufExecutor)Run(task Task, expire time.Duration, timeout TaskTime
         runner := ex.selectRunner()
         if runner.SetTask(task) {
             if timeout != nil {
-                ex.timewheel.Add(timewheel.NewTimer(func(data interface{}) {
+                ex.timewheel.Add(func() {
                     timeout()
-                }, expire, nil))
+                }, expire, false)
             }
             return nil
         }

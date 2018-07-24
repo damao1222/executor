@@ -74,9 +74,9 @@ func (ex *FixedExecutor)Run(task Task, expire time.Duration, timeout TaskTimeout
 
     if ex.taskBuf.TryEnqueue(task) {
         if timeout != nil {
-            ex.timewheel.Add(timewheel.NewTimer(func(data interface{}) {
+            ex.timewheel.Add(func() {
                 timeout()
-            }, expire, nil))
+            }, expire, false)
         }
         return nil
     } else {
