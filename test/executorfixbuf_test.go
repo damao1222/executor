@@ -16,6 +16,8 @@ import (
     "time"
     "fmt"
     "github.com/xfali/goutils/atomic"
+    "math"
+    atomic2 "sync/atomic"
 )
 
 func TestFixedBufExecutor(t *testing.T) {
@@ -127,6 +129,8 @@ func TestFixedBufExecutor4(t *testing.T) {
 
 func TestFixedBufExecutor5(t *testing.T) {
     executor := executor.NewFixedBufExecutor(100, 0)
+    //wait for runner ready
+    time.Sleep(time.Second)
 
     count := 0
     for i:=1; i<100; i++ {
@@ -156,4 +160,54 @@ func TestFixedBufExecutor5(t *testing.T) {
         return
     }
     fmt.Printf("success count %d\n", count)
+}
+
+func TestFixedBufExecutor6(t *testing.T) {
+    executor := executor.NewFixedBufExecutor(50, 20)
+
+    count := 0
+    for i:=1; i<100; i++ {
+        b := i
+        e := atomic.AtomicBool(0)
+        now := time.Now()
+        if executor.Run(func() {
+            fmt.Printf("%d set %t\n", b, e.IsSet())
+            if e.IsSet() {
+                fmt.Printf("%d expired\n", b)
+                return
+            }
+            fmt.Printf("%d done time %d\n", b, time.Since(now) / time.Millisecond)
+            time.Sleep(time.Duration(500)*time.Millisecond)
+        }, time.Second, func() {
+            fmt.Printf("call expire %d at: %d\n",b, time.Since(now) / time.Millisecond)
+            e.Set()
+        }) == nil {
+            count++
+        } else {
+            fmt.Printf("run error")
+        }
+    }
+
+    select {
+    case <- time.After(10*time.Second):
+        return
+    }
+    fmt.Printf("success count %d\n", count)
+}
+
+func TestUint(t *testing.T) {
+    var i uint32
+    b := false
+    for {
+        //i++
+        atomic2.AddUint32(&i, 1)
+        if b {
+            fmt.Println(i)
+            return
+        }
+        if i == math.MaxUint32 {
+            fmt.Println("MAX", i)
+            b = true
+        }
+    }
 }
