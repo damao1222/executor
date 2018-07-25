@@ -13,7 +13,6 @@ package executor
 import (
     "time"
     "github.com/xfali/timewheel"
-    "github.com/xfali/timewheel/async"
     "errors"
     "runtime"
     "github.com/xfali/goutils/container"
@@ -34,7 +33,8 @@ type FixedExecutor struct {
 //协程池会自动选择一个空闲的协程执行任务，所有任务最终都将被执行
 func NewFixedExecutor(size int, taskBufSize int) Executor {
     ex := &FixedExecutor{
-        timewheel : async.New(20*time.Millisecond, time.Minute),
+        //timewheel : timewheel.NewAsyncOne(20*time.Millisecond, time.Minute, size, size),
+        timewheel : timewheel.NewAsyncHiera(24*time.Hour, []time.Duration{time.Hour, time.Minute, time.Second, 20*time.Millisecond}, size, size),
         runners : make([]TaskRunner, size),
         taskBuf: container.NewBlockQueue(size + taskBufSize),
         stop: make(chan bool),

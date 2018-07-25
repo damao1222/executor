@@ -13,7 +13,6 @@ package executor
 import (
     "time"
     "github.com/xfali/timewheel"
-    "github.com/xfali/timewheel/async"
     "errors"
     "sync/atomic"
 )
@@ -32,7 +31,8 @@ type FixedBufExecutor struct {
 //并且当第一个协程池中的协程taskBufSize被填满之前，不会尝试使用协程池中的其他协程
 func NewFixedBufExecutor(size int, taskBufSize int) Executor {
     ex := &FixedBufExecutor{
-        timewheel : async.New(20*time.Millisecond, time.Minute),
+        //timewheel : timewheel.NewAsyncOne(20*time.Millisecond, time.Minute, size, size),
+        timewheel : timewheel.NewAsyncHiera(24*time.Hour, []time.Duration{time.Hour, time.Minute, time.Second, 20*time.Millisecond}, size, size),
         runners : make([]TaskRunner, size),
         curIndex: 0,
     }
