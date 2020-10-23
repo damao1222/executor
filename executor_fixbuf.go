@@ -1,27 +1,24 @@
 /**
- * Copyright (C) 2018, Xiongfa Li.
+ * Copyright (C) 2018-2020, Xiongfa Li.
  * All right reserved.
  * @author xiongfa.li
- * @date 2018/7/16 
+ * @date 2018/7/16
  * @time 16:35
  * @version V1.0
- * Description: 
+ * Description:
  */
 
 package executor
 
 import (
-    "time"
-    "github.com/xfali/timewheel"
-    "errors"
-    "sync/atomic"
+	"errors"
+	"sync"
 )
 
-
 type FixedBufExecutor struct {
-    timewheel timewheel.TimeWheel
-    runners []TaskRunner
-    curIndex uint32
+	runners  []TaskRunner
+	curIndex int
+	lock     sync.Mutex
 }
 
 //创建一个固定大小的协程池
@@ -29,50 +26,42 @@ type FixedBufExecutor struct {
 //taskBufSize： 任务缓冲大小
 //需要注意的是，可以成功加入协程池的任务数量为 size * taskBufSize
 //并且当第一个协程池中的协程taskBufSize被填满之前，不会尝试使用协程池中的其他协程
-func NewFixedBufExecutor(size int, taskBufSize int) Executor {
-    ex := &FixedBufExecutor{
-        //timewheel : timewheel.NewAsyncOne(20*time.Millisecond, time.Minute, size, size),
-        timewheel : timewheel.NewAsyncHiera(24*time.Hour, []time.Duration{time.Hour, time.Minute, time.Second, 20*time.Millisecond}, size, size),
-        runners : make([]TaskRunner, size),
-        curIndex: 0,
-    }
-    //start timer
-    ex.timewheel.Start()
-    for i:=0; i<size; i++ {
-        ex.runners[i] = NewFIFO(taskBufSize)
-        //start runner loop
-        go ex.runners[i].Loop()
-    }
-    return ex
+func NewFixedBufExecutor(size int, taskBufSize int) *FixedBufExecutor {
+	ex := &FixedBufExecutor{
+		runners:  make([]TaskRunner, size),
+		curIndex: 0,
+	}
+	for i := 0; i < size; i++ {
+		ex.runners[i] = NewFIFO(taskBufSize)
+		//start runner loop
+		go ex.runners[i].Loop()
+	}
+	return ex
 }
 
-func (ex *FixedBufExecutor)Run(task Task, expire time.Duration, timeout TaskTimeout) error {
-    for i:=0; i<len(ex.runners); i++ {
-        //runner := ex.runners[i]
-        runner := ex.selectRunner()
-        if runner.SetTask(task) {
-            if timeout != nil {
-                ex.timewheel.Add(func() {
-                    timeout()
-                }, expire, false)
-            }
-            return nil
-        }
-    }
-    return errors.New("All Runners are busy")
+func (ex *FixedBufExecutor) Run(task Task) error {
+	for i := 0; i < len(ex.runners); i++ {
+		//runner := ex.runners[i]
+		runner := ex.selectRunner()
+		if runner.SetTask(task) {
+			return nil
+		}
+	}
+	return errors.New("All Runners are busy. ")
 }
 
-//Not thread-safe but that's OK
-func (ex *FixedBufExecutor)selectRunner() TaskRunner {
-    index := atomic.AddUint32(&ex.curIndex, 1) % uint32(len(ex.runners))
-    //由于在多协程环境，某一个task runner是否idle是动态变化的，所以没必要保证此处的线程安全
-    //ex.curIndex++
-    //index := int(ex.curIndex) % len(ex.runners)
-    return ex.runners[index]
+func (ex *FixedBufExecutor) selectRunner() TaskRunner {
+	ex.lock.Lock()
+	defer ex.lock.Unlock()
+
+	ex.curIndex++
+	ex.curIndex = ex.curIndex % len(ex.runners)
+
+	return ex.runners[ex.curIndex]
 }
 
-func (ex *FixedBufExecutor)Stop() {
-    for _, runner := range ex.runners {
-        runner.Stop()
-    }
+func (ex *FixedBufExecutor) Stop() {
+	for _, runner := range ex.runners {
+		runner.Stop()
+	}
 }
