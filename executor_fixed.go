@@ -12,14 +12,12 @@ package executor
 
 import (
 	"errors"
-	"github.com/xfali/goutils/container"
-	"runtime"
 )
 
 type FixedExecutor struct {
-	runners []TaskRunner
-	taskBuf *container.BlockQueue
-	stop    chan bool
+	runners  []TaskRunner
+	taskChan chan Task
+	stop     chan bool
 }
 
 //创建一个固定大小的协程池
@@ -29,9 +27,9 @@ type FixedExecutor struct {
 //协程池会自动选择一个空闲的协程执行任务，所有任务最终都将被执行
 func NewFixedExecutor(size int, taskBufSize int) *FixedExecutor {
 	ex := &FixedExecutor{
-		runners: make([]TaskRunner, size),
-		taskBuf: container.NewBlockQueue(size + taskBufSize),
-		stop:    make(chan bool),
+		runners:  make([]TaskRunner, size),
+		taskChan: make(chan Task, size+taskBufSize),
+		stop:     make(chan bool),
 	}
 	for i := 0; i < size; i++ {
 		ex.runners[i] = NewOnce()
@@ -48,13 +46,9 @@ func (ex *FixedExecutor) Run(task Task) error {
 	select {
 	case <-ex.stop:
 		return errors.New("executor is stopped")
-	default:
-
-	}
-
-	if ex.taskBuf.TryEnqueue(task) {
+	case ex.taskChan <- task:
 		return nil
-	} else {
+	default:
 		return errors.New("All Runners are busy. ")
 	}
 }
@@ -64,18 +58,15 @@ func (ex *FixedExecutor) loop() {
 		select {
 		case <-ex.stop:
 			return
-		default:
-			ex.taskBuf.WaitOne(func(data interface{}) bool {
+		case task, ok := <-ex.taskChan:
+			if ok {
 				for i := 0; i < len(ex.runners); i++ {
 					runner := ex.runners[i]
-					if runner.SetTask(data.(Task)) {
-						return true
+					if runner.SetTask(task) {
+						break
 					}
 				}
-				//try next loop
-				runtime.Gosched()
-				return false
-			})
+			}
 		}
 	}
 }

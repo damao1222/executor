@@ -54,7 +54,7 @@ func TestFixedExecutor(t *testing.T) {
 }
 
 func TestFixedExecutor2(t *testing.T) {
-	executor := executor.NewFixedExecutor(2, 20)
+	executor := executor.NewFixedExecutor(2, 2)
 
 	for i := 0; i < 100; i++ {
 		b := i
