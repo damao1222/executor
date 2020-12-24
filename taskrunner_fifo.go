@@ -10,16 +10,22 @@
 
 package executor
 
-import "sync"
+import (
+	"log"
+	"sync"
+	"sync/atomic"
+)
 
 type TaskRunnerFIFO struct {
 	task chan Task
 	stop chan struct{}
 	once sync.Once
+
+	state int32
 }
 
 func NewFIFO(taskSize int) *TaskRunnerFIFO {
-	return &TaskRunnerFIFO{task: make(chan Task, taskSize), stop: make(chan struct{})}
+	return &TaskRunnerFIFO{task: make(chan Task, taskSize), stop: make(chan struct{}), state: stateIdle}
 }
 
 func (tr *TaskRunnerFIFO) SetTask(task Task) bool {
@@ -29,6 +35,11 @@ func (tr *TaskRunnerFIFO) SetTask(task Task) bool {
 	default:
 		return false
 	}
+}
+
+//是否有任务正在执行
+func (tr *TaskRunnerFIFO) IsRunning() bool {
+	return atomic.LoadInt32(&tr.state) == stateRunning
 }
 
 func (tr *TaskRunnerFIFO) Stop() {
@@ -49,10 +60,25 @@ func (tr *TaskRunnerFIFO) Loop() {
 		select {
 		case task, ok := <-tr.task:
 			if ok {
-				task()
+				tr.safeRun(task)
 			}
 		case <-tr.stop:
 			return
 		}
 	}
+}
+
+func (tr *TaskRunnerFIFO) handlePanic() {
+	if r := recover(); r != nil {
+		log.Print("task panic: ", r)
+	}
+}
+
+func (tr *TaskRunnerFIFO) safeRun(task Task) {
+	defer tr.handlePanic()
+
+	atomic.StoreInt32(&tr.state, stateRunning)
+	defer atomic.StoreInt32(&tr.state, stateIdle)
+
+	task()
 }

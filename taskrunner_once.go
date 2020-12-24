@@ -10,13 +10,27 @@
 
 package executor
 
+import (
+	"log"
+	"sync"
+	"sync/atomic"
+)
+
+const (
+	stateIdle = iota
+	stateRunning
+)
+
 type TaskRunnerOnce struct {
 	task chan Task
-	stop chan bool
+	stop chan struct{}
+	once sync.Once
+
+	state int32
 }
 
 func NewOnce() *TaskRunnerOnce {
-	return &TaskRunnerOnce{make(chan Task), make(chan bool)}
+	return &TaskRunnerOnce{task: make(chan Task), stop: make(chan struct{}), state: stateIdle}
 }
 
 //NOTICE:当Loop协程没有就绪，则会一直返回false
@@ -29,8 +43,15 @@ func (tr *TaskRunnerOnce) SetTask(task Task) bool {
 	}
 }
 
+//是否有任务正在执行
+func (tr *TaskRunnerOnce) IsRunning() bool {
+	return atomic.LoadInt32(&tr.state) == stateRunning
+}
+
 func (tr *TaskRunnerOnce) Stop() {
-	close(tr.stop)
+	tr.once.Do(func() {
+		close(tr.stop)
+	})
 }
 
 func (tr *TaskRunnerOnce) Next() {
@@ -46,10 +67,25 @@ func (tr *TaskRunnerOnce) Loop() {
 		select {
 		case task, ok := <-tr.task:
 			if ok {
-				task()
+				tr.safeRun(task)
 			}
 		case <-tr.stop:
 			return
 		}
 	}
+}
+
+func (tr *TaskRunnerOnce) handlePanic() {
+	if r := recover(); r != nil {
+		log.Print("task panic: ", r)
+	}
+}
+
+func (tr *TaskRunnerOnce) safeRun(task Task) {
+	defer tr.handlePanic()
+
+	atomic.StoreInt32(&tr.state, stateRunning)
+	defer atomic.StoreInt32(&tr.state, stateIdle)
+
+	task()
 }
