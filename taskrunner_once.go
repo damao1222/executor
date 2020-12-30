@@ -13,12 +13,6 @@ package executor
 import (
 	"log"
 	"sync"
-	"sync/atomic"
-)
-
-const (
-	stateIdle = iota
-	stateRunning
 )
 
 type TaskRunnerOnce struct {
@@ -26,11 +20,15 @@ type TaskRunnerOnce struct {
 	stop chan struct{}
 	once sync.Once
 
-	state int32
+	taskRunnerState
 }
 
 func NewOnce() *TaskRunnerOnce {
-	return &TaskRunnerOnce{task: make(chan Task), stop: make(chan struct{}), state: stateIdle}
+	return &TaskRunnerOnce{
+		task:            make(chan Task),
+		stop:            make(chan struct{}),
+		taskRunnerState: taskRunnerState{nil, TaskStateIdle},
+	}
 }
 
 //NOTICE:当Loop协程没有就绪，则会一直返回false
@@ -41,11 +39,6 @@ func (tr *TaskRunnerOnce) SetTask(task Task) bool {
 	default:
 		return false
 	}
-}
-
-//是否有任务正在执行
-func (tr *TaskRunnerOnce) IsRunning() bool {
-	return atomic.LoadInt32(&tr.state) == stateRunning
 }
 
 func (tr *TaskRunnerOnce) Stop() {
@@ -84,8 +77,8 @@ func (tr *TaskRunnerOnce) handlePanic() {
 func (tr *TaskRunnerOnce) safeRun(task Task) {
 	defer tr.handlePanic()
 
-	atomic.StoreInt32(&tr.state, stateRunning)
-	defer atomic.StoreInt32(&tr.state, stateIdle)
+	tr.setState(TaskStateRunning)
+	defer tr.setState(TaskStateIdle)
 
 	task()
 }

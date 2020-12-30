@@ -10,6 +10,13 @@
 
 package executor
 
+type TaskState int32
+
+const (
+	TaskStateIdle    = 0
+	TaskStateRunning = 1
+)
+
 type TaskRunner interface {
 	//尝试添加一个任务
 	//Task：任务
@@ -24,4 +31,7 @@ type TaskRunner interface {
 
 	//执行器循环
 	Loop()
+
+	// 设置任务状态通知器
+	SetNotifier(chan<- TaskState)
 }
