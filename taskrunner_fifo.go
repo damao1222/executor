@@ -13,7 +13,6 @@ package executor
 import (
 	"log"
 	"sync"
-	"sync/atomic"
 )
 
 type TaskRunnerFIFO struct {
@@ -54,9 +53,29 @@ func (tr *TaskRunnerFIFO) Next() {
 func (tr *TaskRunnerFIFO) OnExpired(task Task) {
 }
 
+func (tr *TaskRunnerFIFO) Steal(runner TaskRunner) bool {
+	// not idle
+	if !tr.isIdle() {
+		return false
+	}
+	if other, ok := runner.(*TaskRunnerFIFO); ok {
+		select {
+		case task, ok := <-other.task:
+			if ok {
+				tr.SetTask(task)
+			}
+			return true
+		default:
+			return false
+		}
+	} else {
+		return false
+	}
+}
+
 //是否有任务正在执行
 func (tr *TaskRunnerFIFO) IsIdle() bool {
-	return atomic.LoadInt32(&tr.state) == TaskStateIdle && len(tr.task) == 0
+	return tr.isIdle() && len(tr.task) == 0
 }
 
 func (tr *TaskRunnerFIFO) Loop() {
@@ -81,8 +100,8 @@ func (tr *TaskRunnerFIFO) handlePanic() {
 func (tr *TaskRunnerFIFO) safeRun(task Task) {
 	defer tr.handlePanic()
 
-	tr.setState(tr, TaskStateRunning)
-	defer tr.setState(tr, TaskStateIdle)
+	tr.setRunning(tr)
+	defer tr.setIdle(tr)
 
 	task()
 }

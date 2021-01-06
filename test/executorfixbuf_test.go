@@ -28,7 +28,7 @@ func TestFixedBufExecutor(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	err = executor.Run(func() {
@@ -37,7 +37,7 @@ func TestFixedBufExecutor(t *testing.T) {
 	})
 
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	err = executor.Run(func() {
@@ -46,7 +46,7 @@ func TestFixedBufExecutor(t *testing.T) {
 	})
 
 	if err == nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	select {

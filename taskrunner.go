@@ -26,6 +26,10 @@ type TaskRunner interface {
 	// 是否有任务正在执行
 	IsIdle() bool
 
+	// 从其他runner窃取task用于执行
+	// 成功返回true，未成功返回false
+	Steal(TaskRunner) bool
+
 	// 停止任务执行器
 	Stop()
 

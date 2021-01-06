@@ -16,9 +16,22 @@ func (tr *taskRunnerState) SetNotifier(notifier chan<- TaskRunner) {
 	tr.notifier = notifier
 }
 
-func (tr *taskRunnerState) setState(runner TaskRunner, state TaskState) {
-	atomic.StoreInt32(&tr.state, int32(state))
+func (tr *taskRunnerState) setIdle(runner TaskRunner) (ret bool) {
+	ret = atomic.CompareAndSwapInt32(&tr.state, TaskStateRunning, TaskStateIdle)
 	if tr.notifier != nil {
 		tr.notifier <- runner
 	}
+	return
+}
+
+func (tr *taskRunnerState) setRunning(runner TaskRunner) (ret bool) {
+	ret = atomic.CompareAndSwapInt32(&tr.state, TaskStateIdle, TaskStateRunning)
+	if tr.notifier != nil {
+		tr.notifier <- runner
+	}
+	return
+}
+
+func (tr *taskRunnerState) isIdle() bool {
+	return atomic.LoadInt32(&tr.state) == TaskStateIdle
 }

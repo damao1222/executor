@@ -13,7 +13,6 @@ package executor
 import (
 	"log"
 	"sync"
-	"sync/atomic"
 )
 
 type TaskRunnerOnce struct {
@@ -58,7 +57,7 @@ func (tr *TaskRunnerOnce) OnExpired(Task) {
 
 //是否有任务正在执行
 func (tr *TaskRunnerOnce) IsIdle() bool {
-	return atomic.LoadInt32(&tr.state) == TaskStateIdle
+	return tr.isIdle()
 }
 
 func (tr *TaskRunnerOnce) Loop() {
@@ -74,6 +73,11 @@ func (tr *TaskRunnerOnce) Loop() {
 	}
 }
 
+// cannot steal
+func (tr *TaskRunnerOnce) Steal(task TaskRunner) bool {
+	return false
+}
+
 func (tr *TaskRunnerOnce) handlePanic() {
 	if r := recover(); r != nil {
 		log.Print("task panic: ", r)
@@ -83,8 +87,8 @@ func (tr *TaskRunnerOnce) handlePanic() {
 func (tr *TaskRunnerOnce) safeRun(task Task) {
 	defer tr.handlePanic()
 
-	tr.setState(tr, TaskStateRunning)
-	defer tr.setState(tr, TaskStateIdle)
+	tr.setRunning(tr)
+	defer tr.setIdle(tr)
 
 	task()
 }
