@@ -18,20 +18,20 @@ const (
 )
 
 type TaskRunner interface {
-	//尝试添加一个任务
-	//Task：任务
-	//成功返回true，失败返回false
+	// 尝试添加一个任务
+	// Task：任务
+	// 成功返回true，失败返回false
 	SetTask(Task) bool
 
-	//是否有任务正在执行
-	IsRunning() bool
+	// 是否有任务正在执行
+	IsIdle() bool
 
-	//停止任务执行器
+	// 停止任务执行器
 	Stop()
 
-	//执行器循环
+	// 执行器循环
 	Loop()
 
 	// 设置任务状态通知器
-	SetNotifier(chan<- TaskState)
+	SetNotifier(chan<- TaskRunner)
 }

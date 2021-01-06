@@ -13,6 +13,7 @@ package executor
 import (
 	"log"
 	"sync"
+	"sync/atomic"
 )
 
 type TaskRunnerOnce struct {
@@ -55,6 +56,11 @@ func (tr *TaskRunnerOnce) OnExpired(Task) {
 
 }
 
+//是否有任务正在执行
+func (tr *TaskRunnerOnce) IsIdle() bool {
+	return atomic.LoadInt32(&tr.state) == TaskStateIdle
+}
+
 func (tr *TaskRunnerOnce) Loop() {
 	for {
 		select {
@@ -77,8 +83,8 @@ func (tr *TaskRunnerOnce) handlePanic() {
 func (tr *TaskRunnerOnce) safeRun(task Task) {
 	defer tr.handlePanic()
 
-	tr.setState(TaskStateRunning)
-	defer tr.setState(TaskStateIdle)
+	tr.setState(tr, TaskStateRunning)
+	defer tr.setState(tr, TaskStateIdle)
 
 	task()
 }
