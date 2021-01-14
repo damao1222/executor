@@ -14,35 +14,35 @@ const (
 	DefaultMaxTaskBufSize      = 128
 )
 
-type fixExecutor interface {
+type optExecutor interface {
 	setInitialGorutineSize(size int)
 	setMaxGorutineSize(size int)
 	setTaskBufSize(size int)
 	setStealInterval(duration time.Duration)
 }
 
-type ExecutorOpt func(exec fixExecutor)
+type ExecutorOpt func(exec optExecutor)
 
 func SetInitialGorutineSize(size int) ExecutorOpt {
-	return func(exec fixExecutor) {
+	return func(exec optExecutor) {
 		exec.setInitialGorutineSize(size)
 	}
 }
 
 func SetMaxGorutineSize(size int) ExecutorOpt {
-	return func(exec fixExecutor) {
+	return func(exec optExecutor) {
 		exec.setMaxGorutineSize(size)
 	}
 }
 
 func SetTaskBufSize(size int) ExecutorOpt {
-	return func(exec fixExecutor) {
+	return func(exec optExecutor) {
 		exec.setTaskBufSize(size)
 	}
 }
 
 func SetStealInterval(duration time.Duration) ExecutorOpt {
-	return func(exec fixExecutor) {
+	return func(exec optExecutor) {
 		exec.setStealInterval(duration)
 	}
 }
