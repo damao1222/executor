@@ -11,15 +11,6 @@ import (
 	"time"
 )
 
-const (
-	DefaultStealInterval       = 1 * time.Second
-	DefaultInitialGorutineSize = 8
-	DefaultMaxGorutineSize     = 64
-	DefaultMaxTaskBufSize      = 128
-)
-
-type WorkStealingExecutorOpt func(exec *WorkStealingExecutor)
-
 type WorkStealingExecutor struct {
 	initSize      int
 	runnerSize    int
@@ -36,7 +27,7 @@ type WorkStealingExecutor struct {
 //taskBufSize： 任务缓冲大小
 //需要注意的是，可以成功加入协程池的任务数量为 size * taskBufSize
 //并且当第一个协程池中的协程taskBufSize被填满之前，不会尝试使用协程池中的其他协程
-func NewWorkStealingExecutor(opts ...WorkStealingExecutorOpt) *WorkStealingExecutor {
+func NewWorkStealingExecutor(opts ...ExecutorOpt) *WorkStealingExecutor {
 	ex := &WorkStealingExecutor{
 		initSize:      DefaultInitialGorutineSize,
 		runnerSize:    DefaultMaxGorutineSize,
@@ -129,26 +120,18 @@ func (ex *WorkStealingExecutor) Stop() {
 	}
 }
 
-func SetInitialGorutineSize(size int) WorkStealingExecutorOpt {
-	return func(exec *WorkStealingExecutor) {
-		exec.initSize = size
-	}
+func (ex *WorkStealingExecutor) setInitialGorutineSize(size int) {
+	ex.initSize = size
 }
 
-func SetMaxGorutineSize(size int) WorkStealingExecutorOpt {
-	return func(exec *WorkStealingExecutor) {
-		exec.runnerSize = size
-	}
+func (ex *WorkStealingExecutor) setMaxGorutineSize(size int) {
+	ex.runnerSize = size
 }
 
-func SetTaskBufSize(size int) WorkStealingExecutorOpt {
-	return func(exec *WorkStealingExecutor) {
-		exec.bufSize = size
-	}
+func (ex *WorkStealingExecutor) setTaskBufSize(size int) {
+	ex.bufSize = size
 }
 
-func SetStealInterval(interval time.Duration) WorkStealingExecutorOpt {
-	return func(exec *WorkStealingExecutor) {
-		exec.stealInterval = interval
-	}
+func (ex *WorkStealingExecutor) setStealInterval(interval time.Duration) {
+	ex.stealInterval = interval
 }
