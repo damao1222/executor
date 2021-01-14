@@ -82,13 +82,23 @@ func (ex *WorkStealingExecutor) Run(task Task) error {
 }
 
 func (ex *WorkStealingExecutor) selectRunner() TaskRunner {
+	for _, runner := range ex.runners {
+		if runner.IsIdle() {
+			return runner
+		}
+	}
 	if len(ex.runners) == ex.runnerSize {
 		ex.curIndex++
 		ex.curIndex = ex.curIndex % len(ex.runners)
 
 		return ex.runners[ex.curIndex]
+	} else {
+		newRunner := NewFIFO(ex.bufSize)
+		//start runner loop
+		go newRunner.Loop()
+		ex.runners = append(ex.runners, newRunner)
+		return newRunner
 	}
-	return nil
 }
 
 func (ex *WorkStealingExecutor) doSteal() {
