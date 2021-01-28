@@ -35,6 +35,7 @@ func NewLazyFixBUfExecutor(opts ...ExecutorOpt) *LazyFixBUfExecutor {
 	for _, opt := range opts {
 		opt(ex)
 	}
+	ex.runners = make([]TaskRunner, ex.initSize)
 	for i := 0; i < ex.initSize; i++ {
 		ex.runners[i] = NewFIFO(ex.bufSize)
 		//start runner loop
