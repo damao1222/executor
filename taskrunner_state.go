@@ -24,8 +24,16 @@ func (tr *taskRunnerState) setIdle(runner TaskRunner) (ret bool) {
 	return
 }
 
+func (tr *taskRunnerState) setState(runner TaskRunner, before, after TaskState) (ret bool) {
+	ret = atomic.CompareAndSwapInt32(&tr.state, before, after)
+	if tr.notifier != nil {
+		tr.notifier <- runner
+	}
+	return
+}
+
 func (tr *taskRunnerState) setRunning(runner TaskRunner) (ret bool) {
-	ret = atomic.CompareAndSwapInt32(&tr.state, TaskStateIdle, TaskStateRunning)
+	ret = atomic.CompareAndSwapInt32(&tr.state, TaskStateQueued, TaskStateRunning)
 	if tr.notifier != nil {
 		tr.notifier <- runner
 	}

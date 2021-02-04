@@ -33,6 +33,7 @@ func NewOnce() *TaskRunnerOnce {
 
 //NOTICE:当Loop协程没有就绪，则会一直返回false
 func (tr *TaskRunnerOnce) SetTask(task Task) bool {
+	tr.setState(tr, TaskStateIdle, TaskStateQueued)
 	select {
 	case tr.task <- task:
 		return true

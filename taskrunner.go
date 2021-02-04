@@ -10,11 +10,12 @@
 
 package executor
 
-type TaskState int32
+type TaskState = int32
 
 const (
 	TaskStateIdle    = 0
 	TaskStateRunning = 1
+	TaskStateQueued  = 2
 )
 
 type TaskRunner interface {

@@ -32,6 +32,7 @@ func NewFIFO(taskSize int) *TaskRunnerFIFO {
 }
 
 func (tr *TaskRunnerFIFO) SetTask(task Task) bool {
+	tr.setState(tr, TaskStateIdle, TaskStateQueued)
 	select {
 	case tr.task <- task:
 		return true
