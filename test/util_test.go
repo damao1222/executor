@@ -17,7 +17,7 @@ func TestRunUtil(t *testing.T) {
 	exec := executor.NewWorkStealingExecutor()
 	t.Run("type not match", func(t *testing.T) {
 		var ret []string
-		_, err := exectool.Run(exec, &ret, func() int {
+		_, err := exectool.RunAll(exec, &ret, func() int {
 			return 1
 		}, func() int {
 			return 2
@@ -31,7 +31,7 @@ func TestRunUtil(t *testing.T) {
 	t.Run("normal", func(t *testing.T) {
 		var ret []string
 		now := time.Now()
-		r, err := exectool.Run(exec, &ret, func() string {
+		r, err := exectool.RunAll(exec, &ret, func() string {
 			time.Sleep(1 * time.Second)
 			return "hello"
 		}, func() string {
@@ -60,7 +60,7 @@ func TestRunUtil(t *testing.T) {
 	t.Run("panic", func(t *testing.T) {
 		var ret []string
 		now := time.Now()
-		r, err := exectool.Run(exec, &ret, func() string {
+		r, err := exectool.RunAll(exec, &ret, func() string {
 			time.Sleep(1 * time.Second)
 			return "hello"
 		}, func() string {
@@ -104,7 +104,7 @@ func TestRunUtil(t *testing.T) {
 				return cur
 			})
 		}
-		r, err := exectool.Run(exec, &ret, funcs...)
+		r, err := exectool.RunAll(exec, &ret, funcs...)
 		if err != nil {
 			t.Fatal("must not be error! ", err)
 		}

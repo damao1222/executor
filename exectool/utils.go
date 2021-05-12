@@ -17,7 +17,7 @@ var errType = reflect.TypeOf((*error)(nil)).Elem()
 
 type Result []error
 
-func Run(exec executor.Executor, ret interface{}, supplyFuncs ...interface{}) (Result, error) {
+func RunAll(exec executor.Executor, ret interface{}, supplyFuncs ...interface{}) (Result, error) {
 	if exec == nil {
 		return nil, errors.New("Executor is nil. ")
 	}
